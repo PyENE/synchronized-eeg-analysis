@@ -1,0 +1,6 @@
+.idea
+*.pyc
+build
+dist
+eega.egg-info
+data
