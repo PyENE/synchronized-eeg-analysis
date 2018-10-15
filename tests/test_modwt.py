@@ -18,3 +18,7 @@ def modwt_init():
 def test_modwt(modwt_init):
     assert modwt_init.wt.shape[0] == 7
     assert modwt_init.wt.shape[1] == 1600
+
+
+def test_plot_modwt(modwt_init):
+    modwt_init.plot_time_series_and_wavelet_transform()
