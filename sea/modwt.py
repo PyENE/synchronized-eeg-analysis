@@ -19,9 +19,9 @@ class MODWT():
         self.nlevels = nlevels
         self.wf = wf
         self.wt = np.array([])
-        self.compute_modwt(tmin, tmax, margin)
+        self._compute_modwt(tmin, tmax, margin)
 
-    def compute_modwt(self, tmin, tmax, margin):
+    def _compute_modwt(self, tmin, tmax, margin):
         left_margin = right_margin = margin
         if tmin - margin < 0:
             left_margin = tmin
@@ -30,14 +30,16 @@ class MODWT():
         censor = ((tmax + right_margin) - (tmin - left_margin)) % 2 ** self.nlevels
         left_censor = int(np.ceil(censor / 2))
         right_censor = int(np.floor(censor / 2))
-        self.time_series = self.time_series[tmin - left_margin + left_censor : tmax + right_margin - right_censor]
-        wt = modwt(robjects.FloatVector(self.time_series), wf=self.wf, n_levels=self.nlevels)
+        wt = modwt(robjects.FloatVector(
+            self.time_series[tmin - left_margin + left_censor : tmax + right_margin - right_censor]),
+            wf=self.wf, n_levels=self.nlevels)
         wt = phase_shift(wt, 'la8')
         wt = np.array(wt)
         if type(wt[0]) == np.ndarray:
             wt = wt[:-1, :]
             wt = wt[:, left_margin - left_censor: right_censor - right_margin]
-            if wt.shape[1] == len(self.time_series):
+            if wt.shape[1] == len(self.time_series[tmin:tmax]):
+                self.time_series = self.time_series[tmin:tmax]
                 self.wt = wt
 
     def plot_time_series_and_wavelet_transform(self):
