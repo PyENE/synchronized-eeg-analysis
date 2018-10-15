@@ -2,4 +2,5 @@
 build
 dist
 synchronized_eeg_analysis.egg-info
+.pytest_cache
 *.pyc
