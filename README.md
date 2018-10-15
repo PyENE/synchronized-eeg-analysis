@@ -1,4 +1,4 @@
-# synchronized-eeg-analysis (sea): EM-synchronized EEG analysis using MODWT
+# synchronized-eeg-analysis (sea): EM-synchronized EEG analysis wrapping MODWT R package waveslim 
 
 ## Installation
 
@@ -23,5 +23,3 @@ wget yyy
 from sea import MODWT
 from sea import SynchronizedEEG
 ```
-
-Output:
