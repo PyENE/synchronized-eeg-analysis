@@ -1,6 +1,5 @@
 .idea
-*.pyc
 build
 dist
-eega.egg-info
-data
+eeg_analysis.egg-info
+*.pyc
