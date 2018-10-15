@@ -7,7 +7,7 @@ import os
 PROJECT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 DATA_PATH = os.path.join(PROJECT_PATH, 'data')
 
-SUBJECT_COL = 'SUBJECT_NAME'
+SUBJECT_COL = 'SUBJ_NAME'
 TEXT_COL = 'TEXT'
 FIXATION_LATENCY_COL = 'FIX_LATENCY'
 FIRST_FIXATION_COL = 'ISFIRST'
