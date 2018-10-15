@@ -43,7 +43,7 @@ class MODWT():
                 self.wt = wt
 
     def plot_time_series_and_wavelet_transform(self):
-        assert self.wt != []
+        assert len(self.wt) != 0
         f, axarr = plt.subplots(self.wt.shape[0] + 1, sharex=True)
         ylabels = ["s" + str(scale + 1) for scale in range(0, self.wt.shape[0])]
         plt.xlabel('time (ms)')
