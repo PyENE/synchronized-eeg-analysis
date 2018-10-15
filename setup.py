@@ -12,13 +12,13 @@ def read(fname):
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
-setup(name='eeg-analysis',
+setup(name='synchronized-eeg-analysis',
       version='0.2a0',
       description='Python tools for EEG analysis',
       install_requires=requirements,
       author='Brice Olivier',
       author_email='briceolivier1409@gmail.com',
       url='https://github.com/brice-olivier/',
-      packages=['eeganalysis'],
+      packages=['sea'],
       license=read('LICENSE'),
       long_description=read('README.md'))

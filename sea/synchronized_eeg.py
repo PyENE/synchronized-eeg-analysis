@@ -9,7 +9,7 @@ import re
 from .modwt import MODWT
 
 
-class SyncEEG:
+class SynchronizedEEG:
     def __init__(self, eeg_mat_file, em_data):
         self._init_attributes(eeg_mat_file, em_data)
 

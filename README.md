@@ -1,1 +1,1 @@
-# EM-synchronized EEG analysis using MODWT
+# sea: EM-synchronized EEG analysis using MODWT

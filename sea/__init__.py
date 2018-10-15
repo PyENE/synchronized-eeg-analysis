@@ -2,4 +2,4 @@
 __author__ = 'Brice Olivier'
 
 from .modwt import MODWT
-from .synchronized_eeg import SyncEEG
+from .synchronized_eeg import SynchronizedEEG
