@@ -1,5 +1,5 @@
 .idea
 build
 dist
-sea.egg-info
+synchronized_eeg_analysis.egg-info
 *.pyc
