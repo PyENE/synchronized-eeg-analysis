@@ -81,7 +81,7 @@ class SynchronizedEEG:
         t0_idx = 0
         # t0_idx = np.where(self.eeg_times == -100)[0][0]
         t1_idx = np.where(self.eeg_times == 0)[0][0]
-        return np.mean(self.eeg_trial[:, t0_idx:t1_idx, :], 1)
+        return np.mean(self.eeg_trial[:, t0_idx:t1_idx], 1)
 
     def remove_baseline_activity(self):
         self.eeg_trial = (self.eeg_trial.T - self.get_baseline_activity()).T
