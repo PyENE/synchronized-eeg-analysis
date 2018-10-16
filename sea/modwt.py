@@ -58,7 +58,7 @@ class MODWT():
         plt.show()
 
     def plot_time_series_and_wavelet_transform_with_phases(self, phases, last_x_scales=None, events=None, tags=None):
-        assert self.wt != []
+        assert len(self.wt) != 0
         last_x_scales = self.nlevels if (last_x_scales is None) or (last_x_scales > self.nlevels) else last_x_scales
         f, axarr = plt.subplots(last_x_scales + 1, sharex=True)
         ylabels = ["sc" + str(scale + 1) for scale in range(0, self.nlevels)]
