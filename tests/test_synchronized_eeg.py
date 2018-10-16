@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Brice Olivier'
 
+import os
 import scipy.io
-from sea import MODWT
 from sea import SynchronizedEEG
+from sea.config import DATA_PATH
 import pandas as pd
 import pytest
 
 
 @pytest.fixture(scope="module")
 def synchronized_eeg_init():
-    eeg_data = scipy.io.loadmat('../data/s01_sample.mat', squeeze_me=True, struct_as_record=False)['EEG']
-    em_data = pd.read_csv('../data/s01_sample.csv')
+    eeg_data = scipy.io.loadmat(os.path.join(DATA_PATH, 's01_sample.mat'),
+                                squeeze_me=True, struct_as_record=False)['EEG']
+    em_data = pd.read_csv(os.path.join(DATA_PATH, 's01_sample.csv'))
     return SynchronizedEEG(eeg_data, em_data, 's01', 'chasse_oiseaux-f1')
 
 

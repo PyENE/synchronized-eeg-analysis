@@ -5,7 +5,7 @@ import os
 
 
 PROJECT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-DATA_PATH = os.path.join(PROJECT_PATH, 'data')
+DATA_PATH = os.path.join(PROJECT_PATH, 'sample', 'data')
 
 SUBJECT_COL = 'SUBJ_NAME'
 TEXT_COL = 'TEXT'
