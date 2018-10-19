@@ -71,31 +71,6 @@ class SynchronizedEEG:
     def get_fixed_words(self):
         return np.array(self.em_trial[FIXED_WORD_COL])
 
-    def get_baseline_activity(self):
-        """
-        |[-100;0]| ms:
-        Task modulates functional connectivity networks in free viewing, Seidkhan H. et al. 2017
-        |[-188;0]| ms:
-        fixation cross for 500-700ms: Frei 2013
-        """
-        t0_idx = 0
-        # t0_idx = np.where(self.eeg_times == -100)[0][0]
-        t1_idx = np.where(self.eeg_times == 0)[0][0]
-        return np.mean(self.eeg_trial[:, t0_idx:t1_idx], 1)
-
-    def remove_baseline_activity(self):
-        self.eeg_trial = (self.eeg_trial.T - self.get_baseline_activity()).T
-
-    def plot_baseline_activity(self, channel_name):
-        channel_id = self.get_channel_id(channel_name)
-        ts = self.eeg_trial[channel_id, :]
-        x = self.eeg_times
-        plt.plot(x, ts)
-        baseline_activity = self.get_baseline_activity()
-        baseline_activity = baseline_activity[channel_id]
-        plt.plot(x, [baseline_activity] * len(x))
-        plt.show()
-
     def plot_activity(self, channel_name):
         channel_id = self.get_channel_id(channel_name)
         ts = self.eeg_trial[channel_id, :]
@@ -132,20 +107,67 @@ class SynchronizedEEG:
                       for phase in phases]
         return phases
 
-    def compute_modwt(self, remove_baseline_activity=True, margin='max', nlevels=7, wf='la8'):
+    @staticmethod
+    def standardize_time_series(time_series, baseline, method):
+        """Time domain or frequency domain, average trial or single trial, additive or gain model"""
+        if method == 'gain':
+            time_series = ((time_series.T - np.mean(baseline, 1)) / np.std(baseline, 1)).T
+        elif method == 'additive':
+            time_series = (time_series.T / np.mean(baseline, 1)).T
+        else:
+            print('SynchronizedEEG.standardize_time_series(method): method unknown')
+        return time_series
+
+    def compute_modwt(self, standardize_trial=None, margin='max', nlevels=7, wf='la8'):
+        """
+        :param standardize_trial: |[0;8]|
+        0: single trial, time domain, gain model
+        1: single trial, time domain, additive model
+        2: single trial, time-frequency domain, gain model
+        3: single trial, time-frequency domain, additive model
+        4: average trial, time domain, gain model
+        5: average trial, time domain, additive model
+        6: average trial, time-frequency domain, gain model
+        7: average trial, time-frequency domain, additive model
+        :param margin: int or 'max'
+        :param nlevels: int
+        :param wf: string
+        wavelet function
+        :return: pandas.DataFrame
+        """
         if margin == 'max':
             margin = - self.eeg_times[0]
-        if remove_baseline_activity:
-            self.remove_baseline_activity()
         tmin = self.get_first_fixation_time_id()
         tmax = self.get_last_fixation_time_id()
         phases = self.compute_epoch_phases(from_zero=True, tmax=self.get_last_fixation_time())
         melted_modwt_df = []
         phases_for_df = sum([sum([[phase[2]] * (phase[1] - phase[0]) for phase in phases], [])] * nlevels, [])
+        index_zero = self.get_time_index(0)
+        if standardize_trial in [0, 1]:
+            baseline = self.eeg_trial[:, 0:index_zero]
+            if standardize_trial == 0:
+                self.eeg_trial = self.standardize_time_series(self.eeg_trial, baseline, method='gain')
+            elif standardize_trial == 1:
+                self.eeg_trial = self.standardize_time_series(self.eeg_trial, baseline, method='additive')
         for channel_name in self.eeg_channel_names:
             channel_id = self.get_channel_id(channel_name)
             ts = self.eeg_trial[channel_id , :]
-            wt = MODWT(ts, tmin=tmin, tmax=tmax, margin=margin, nlevels=nlevels, wf=wf)
+            if standardize_trial in [2, 3]:
+                wt = MODWT(ts, tmin=self.get_time_index(-100), tmax=tmax,
+                           margin=margin, nlevels=7, wf='la8')
+                wt_baseline = wt.wt[:, 0:100]
+                wt_wt = wt.wt[:, tmin - (-self.eeg_times[0] - 100):]
+                if standardize_trial == 2:
+                    wt_wt = self.standardize_time_series(wt_wt, wt_baseline, method='gain')
+                else:
+                    wt_wt = self.standardize_time_series(wt_wt, wt_baseline, method='additive')
+                wt.wt = wt_wt
+                wt.time_series = ts[tmin:tmax]
+            else:
+                wt = MODWT(ts, tmin=tmin, tmax=tmax, margin=margin, nlevels=nlevels, wf=wf)
+
+
+
             if len(wt.wt) == 0:
                 print('wt truncated and removed for %s - %s - %s' % (
                     self.subject_name, self.text_name, channel_name))

@@ -70,14 +70,6 @@ def test_get_fixed_words(synchronized_eeg_init):
     assert len(synchronized_eeg_init.get_fixed_words()) == synchronized_eeg_init.em_trial.shape[0]
 
 
-def test_get_baseline_activity(synchronized_eeg_init):
-    assert len(synchronized_eeg_init.get_baseline_activity()) == len(synchronized_eeg_init.eeg_channel_names)
-
-
-def test_plot_baseline_activity(synchronized_eeg_init):
-    synchronized_eeg_init.plot_baseline_activity('Fp1')
-
-
 def test_plot_activity(synchronized_eeg_init):
     synchronized_eeg_init.plot_activity('Fp1')
 
@@ -89,3 +81,7 @@ def test_compute_epoch_phases(synchronized_eeg_init):
 
 def test_compute_modwt(synchronized_eeg_init):
     assert synchronized_eeg_init.compute_modwt().shape == (875910, 7)
+    assert synchronized_eeg_init.compute_modwt(standardize_trial=0).shape == (875910, 7)
+    assert synchronized_eeg_init.compute_modwt(standardize_trial=1).shape == (875910, 7)
+    assert synchronized_eeg_init.compute_modwt(standardize_trial=2).shape == (875910, 7)
+    assert synchronized_eeg_init.compute_modwt(standardize_trial=3).shape == (875910, 7)
