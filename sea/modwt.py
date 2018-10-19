@@ -35,25 +35,33 @@ class MODWT():
             wf=self.wf, n_levels=self.nlevels)
         wt = phase_shift(wt, 'la8')
         wt = np.array(wt)
+        # print('compute_modwt %s - %s' % (wt.shape, len(self.time_series[tmin:tmax])))
         if type(wt[0]) == np.ndarray:
             wt = wt[:-1, :]
             wt = wt[:, left_margin - left_censor: right_censor - right_margin]
+            # print('compute_modwt %s - %s' % (wt.shape, len(self.time_series[tmin:tmax])))
             if wt.shape[1] == len(self.time_series[tmin:tmax]):
                 self.time_series = self.time_series[tmin:tmax]
                 self.wt = wt
 
-    def plot_time_series_and_wavelet_transform(self):
+    def plot_time_series_and_wavelet_transform(self, last_x_scales=None, events=None, tags=None):
         assert len(self.wt) != 0
-        f, axarr = plt.subplots(self.wt.shape[0] + 1, sharex=True)
+        last_x_scales = self.nlevels if (last_x_scales is None) or (last_x_scales > self.nlevels) else last_x_scales
+        f, axarr = plt.subplots(last_x_scales + 1, sharex=True)
         ylabels = ["s" + str(scale + 1) for scale in range(0, self.wt.shape[0])]
         plt.xlabel('time (ms)')
-        for i in range(0, self.wt.shape[0]):
-            axarr[i].plot(range(len(self.time_series)),
-                          self.wt[self.wt.shape[0] - i - 1, :],
-                          linewidth=1)
-            axarr[i].set_ylabel("%s" % ylabels[self.wt.shape[0] - i - 1], rotation=0)
-        axarr[self.wt.shape[0]].plot(range(len(self.time_series)), self.time_series, linewidth=1)
-        axarr[self.wt.shape[0]].set_ylabel('TS', rotation=0)
+        for i, ax in enumerate(axarr[:-1]):
+            ax.plot(range(len(self.time_series)), self.wt[self.nlevels - i - 1, :], linewidth=1)
+            ax.set_ylabel("%s" % ylabels[self.wt.shape[0] - i - 1], rotation=0)
+        axarr[last_x_scales].plot(range(len(self.time_series)), self.time_series, linewidth=1)
+        if events is not None:
+            for event in events:
+                for ax in axarr:
+                    ax.axvline(x=event, color='black', linewidth=1, linestyle=':')
+            if tags is not None:
+                for i, tag in enumerate(tags):
+                    axarr[last_x_scales].text(x=events[i], y=-0.10, s=tag, size='xx-small', rotation=90)
+        axarr[last_x_scales].set_ylabel('TS', rotation=0)
         plt.subplots_adjust(wspace=0, hspace=0.2)
         plt.show()
 
