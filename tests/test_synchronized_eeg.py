@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Brice Olivier'
 
+import mne
 import os
 import scipy.io
 from sea import SynchronizedEEG
@@ -14,7 +15,8 @@ def synchronized_eeg_init():
     eeg_data = scipy.io.loadmat(os.path.join(DATA_PATH, 's01_sample.mat'),
                                 squeeze_me=True, struct_as_record=False)['EEG']
     em_data = pd.read_csv(os.path.join(DATA_PATH, 's01_sample.csv'))
-    return SynchronizedEEG(eeg_data, em_data, 's01', 'chasse_oiseaux-f1')
+    channel_info = mne.io.read_epochs_eeglab(os.path.join('sample', 'data', 'synchro_s01_test.set'), verbose='CRITICAL').info
+    return SynchronizedEEG(eeg_data, em_data, 's01', 'chasse_oiseaux-f1', channel_info)
 
 
 def test_synchronized_eeg_new(synchronized_eeg_init):

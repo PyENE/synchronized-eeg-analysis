@@ -6,11 +6,12 @@ from .config import (SUBJECT_COL, TEXT_COL, FIXATION_LATENCY_COL, FIRST_FIXATION
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from .melted_modwt_dataframe import MeltedMODWTDataFrame
 from .modwt import MODWT
 
 
 class SynchronizedEEG:
-    def __new__(cls, eeg_data, em_data, subject_name, text_name):
+    def __new__(cls, eeg_data, em_data, subject_name, text_name, channel_info):
         text_list = [epoch.textname for epoch in eeg_data.epoch]
         em_trial = em_data.loc[(em_data[TEXT_COL] == text_name) &
                                     (em_data[SUBJECT_COL] == subject_name)]
@@ -26,6 +27,7 @@ class SynchronizedEEG:
         instance.eeg_times = eeg_data.times
         instance.eeg_epoch = eeg_data.epoch[epoch_id]
         instance.eeg_channel_names = [chanloc.labels for chanloc in eeg_data.chanlocs]
+        instance.channel_info = channel_info
         return instance
 
     def get_channel_id(self, channel_name):
@@ -165,9 +167,6 @@ class SynchronizedEEG:
                 wt.time_series = ts[tmin:tmax]
             else:
                 wt = MODWT(ts, tmin=tmin, tmax=tmax, margin=margin, nlevels=nlevels, wf=wf)
-
-
-
             if len(wt.wt) == 0:
                 print('wt truncated and removed for %s - %s - %s' % (
                     self.subject_name, self.text_name, channel_name))
@@ -179,7 +178,7 @@ class SynchronizedEEG:
                                                                       events=fixations_time, tags=tags)
                 """
                 melted_modwt_df.append(self._wt_to_melted_df(wt, phases_for_df, channel_name))
-        return pd.concat(melted_modwt_df)
+        return MeltedMODWTDataFrame(pd.concat(melted_modwt_df), channel_info = self.channel_info)
 
     def _wt_to_melted_df(self, wt, phases, channel_name):
         df = pd.DataFrame(wt.wt)
@@ -202,5 +201,3 @@ class SynchronizedEEG:
         df[HUE_COL] = df[HUE_COL].astype('category')
         df[HUE_COL] = df[HUE_COL].cat.set_categories(range(4))
         return df
-
-
