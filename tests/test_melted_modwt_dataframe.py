@@ -3,14 +3,14 @@ __author__ = 'Brice Olivier'
 
 import pytest
 from sea import MeltedMODWTDataFrame
-from sea import SynchronizedEEG
-from .test_synchronized_eeg import synchronized_eeg_init
+from sea import SynchronizedEEGTrial
+from .test_synchronized_eeg_trial import synchronized_eeg_trial_init
 
 
 @pytest.fixture(scope="module")
-@pytest.mark.usefixtures("synchronized_eeg_init")
-def melted_modwt_dataframe_init(synchronized_eeg_init):
-    return synchronized_eeg_init.compute_modwt(standardize_trial=2)
+@pytest.mark.usefixtures("synchronized_eeg_trial_init")
+def melted_modwt_dataframe_init(synchronized_eeg_trial_init):
+    return synchronized_eeg_trial_init.compute_modwt(standardize_trial=2)
 
 
 def test_topomap(melted_modwt_dataframe_init):

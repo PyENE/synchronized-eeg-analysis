@@ -10,7 +10,7 @@ from .melted_modwt_dataframe import MeltedMODWTDataFrame
 from .modwt import MODWT
 
 
-class SynchronizedEEG:
+class SynchronizedEEGTrial:
     def __new__(cls, eeg_data, em_data, subject_name, text_name, channel_info):
         text_list = [epoch.textname for epoch in eeg_data.epoch]
         em_trial = em_data.loc[(em_data[TEXT_COL] == text_name) &
@@ -117,7 +117,7 @@ class SynchronizedEEG:
         elif method == 'additive':
             time_series = (time_series.T / np.mean(baseline, 1)).T
         else:
-            print('SynchronizedEEG.standardize_time_series(method): method unknown')
+            print('SynchronizedEEGTrial.standardize_time_series(method): method unknown')
         return time_series
 
     def compute_modwt(self, standardize_trial=None, margin='max', nlevels=7, wf='la8'):

@@ -1,6 +1,11 @@
 .idea
 build
 dist
+output
 synchronized_eeg_analysis.egg-info
 .pytest_cache
 *.pyc
+*.fdt
+*.set
+*.mat
+tests/tmp_script.py
