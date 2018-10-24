@@ -4,7 +4,11 @@ __author__ = 'Brice Olivier'
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
+import os
 import pandas as pd
+from sea.config import OUTPUT_PATH
+import uuid
+
 
 class MeltedMODWTDataFrame(pd.DataFrame):
     """
@@ -25,10 +29,17 @@ class MeltedMODWTDataFrame(pd.DataFrame):
     def _constructor(self):
         return MeltedMODWTDataFrame
 
-    def plot_topomap(self, groupby=None, robust=False, last_x_scales=None):
+    @staticmethod
+    def concat(melted_modwt_dataframes):
+        assert all([type(melted_modwt_dataframe) == MeltedMODWTDataFrame
+                    for melted_modwt_dataframe in melted_modwt_dataframes])
+        melted_modwt_dataframe = pd.concat(melted_modwt_dataframes)
+        melted_modwt_dataframe.channel_info = melted_modwt_dataframe[0].channel_info
+        return melted_modwt_dataframe
+
+    def plot_topomap(self, groupby=None, robust=False, last_x_scales=None, is_file_output=False):
         """
-        TODO: make sure channel_order is the same after DataFrame.groupby: can be SCALE, PHASE, SUBJECT, TEXT_TYPE
-        TODO: make groupby not static
+        TODO: corrplots
         """
         self['TEXT_TYPE'] = self['TEXT'].apply(lambda x: x.split('-')[1][0])
         if groupby is not None:
@@ -84,4 +95,13 @@ class MeltedMODWTDataFrame(pd.DataFrame):
                 fig.text(0.5, 0.01, 'scale', ha='center')
                 fig.text(0.01, 0.5, 'phase', va='center', rotation='vertical')
                 fig.tight_layout()
-                mne.viz.utils.plt_show()
+                if is_file_output:
+                    file_path = uuid.uuid4().hex + '.png'
+                    if not os.path.exists(OUTPUT_PATH):
+                        os.makedirs(OUTPUT_PATH)
+                    file_path = os.path.join(OUTPUT_PATH, file_path)
+                    plt.savefig(file_path)
+                    print('topomap - %s, saved to %s' % (plot_title, file_path))
+                else:
+                    mne.viz.utils.plt_show()
+

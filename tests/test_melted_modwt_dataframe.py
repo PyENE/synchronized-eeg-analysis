@@ -14,4 +14,4 @@ def melted_modwt_dataframe_init(synchronized_eeg_init):
 
 
 def test_topomap(melted_modwt_dataframe_init):
-    melted_modwt_dataframe_init.plot_topomap(groupby=['SCALE', 'PHASE'], robust=True)
+    melted_modwt_dataframe_init.plot_topomap(groupby=['SCALE', 'PHASE'], robust=True, is_file_output=True)
