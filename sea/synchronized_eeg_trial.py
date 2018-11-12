@@ -1,20 +1,19 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Brice Olivier'
 
-from .config import (SUBJECT_COL, TEXT_COL, FIXATION_LATENCY_COL, FIRST_FIXATION_COL,
-                     LAST_FIXATION_COL, FIXED_WORD_COL, HUE_COL)
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from .melted_modwt_dataframe import MeltedMODWTDataFrame
 from .modwt import MODWT
+from sea import config
 
 
 class SynchronizedEEGTrial:
     def __new__(cls, eeg_data, em_data, subject_name, text_name, channel_info):
         text_list = [epoch.textname for epoch in eeg_data.epoch]
-        em_trial = em_data.loc[(em_data[TEXT_COL] == text_name) &
-                                    (em_data[SUBJECT_COL] == subject_name)]
+        em_trial = em_data.loc[(em_data[config.TEXT_COL] == text_name) &
+                                    (em_data[config.SUBJECT_COL] == subject_name)]
         if text_name not in text_list or em_trial.empty:
             print('Trial not found in data')
             return None
@@ -26,9 +25,40 @@ class SynchronizedEEGTrial:
         instance.eeg_trial = eeg_data.data[:, :, epoch_id]
         instance.eeg_times = eeg_data.times
         instance.eeg_epoch = eeg_data.epoch[epoch_id]
-        instance.eeg_channel_names = [chanloc.labels for chanloc in eeg_data.chanlocs]
+        instance._eeg_channel_names = channel_info['ch_names']
         instance.channel_info = channel_info
         return instance
+
+    @property
+    def eeg_channel_names(self):
+        return self.channel_info['ch_names']
+
+    def subsample_channels(self, channel_names):
+        assert all([channel in self.eeg_channel_names for channel in channel_names])
+        ch_ids = [self.get_channel_id(channel) for channel in channel_names]
+        self.eeg_trial = self.eeg_trial[ch_ids, :]
+        self.channel_info['ch_names'] = [self.channel_info['ch_names'][ch_id] for ch_id in ch_ids]
+        self.channel_info['chs'] = [self.channel_info['chs'][ch_id] for ch_id in ch_ids]
+        self.channel_info['nchan'] = len(ch_ids)
+
+    def aggregate_channels(self, channel_names, roi_name):
+        assert all([channel in self.eeg_channel_names for channel in channel_names])
+        ch_ids = [self.get_channel_id(channel) for channel in channel_names]
+        self.eeg_trial = np.vstack((self.eeg_trial, np.mean(self.eeg_trial[ch_ids, :], 0)))
+        self.channel_info['ch_names'].append(roi_name)
+        self.channel_info['chs'].append({})
+        self.channel_info['chs'][-1]['loc'] = np.mean(
+            np.vstack([self.channel_info['chs'][ch_id]['loc']for ch_id in ch_ids]), 0)
+        self.channel_info['chs'][-1]['unit_mul'] = 0
+        self.channel_info['chs'][-1]['range'] = 1.0
+        self.channel_info['chs'][-1]['cal'] = 1e-06
+        self.channel_info['chs'][-1]['kind'] = 2
+        self.channel_info['chs'][-1]['coil_type'] = 1
+        self.channel_info['chs'][-1]['unit'] = 107
+        self.channel_info['chs'][-1]['coord_frame'] = 0
+        self.channel_info['chs'][-1]['ch_name'] = roi_name
+        self.channel_info['chs'][-1]['scanno'] = len(self.channel_info['chs'])
+        self.channel_info['chs'][-1]['logno'] = len(self.channel_info['chs'])
 
     def get_channel_id(self, channel_name):
         if channel_name in self.eeg_channel_names:
@@ -56,22 +86,22 @@ class SynchronizedEEGTrial:
         return np.where(self.eeg_times == self.get_last_fixation_time())[0][0]
 
     def get_em_epoch_start_time(self):
-        return self.em_trial.loc[self.em_trial[FIRST_FIXATION_COL] == 1, FIXATION_LATENCY_COL].values[0]
+        return self.em_trial.loc[self.em_trial[config.FIRST_FIXATION_COL] == 1, config.FIXATION_LATENCY_COL].values[0]
 
     def get_em_epoch_end_time(self):
-        return self.em_trial.loc[self.em_trial[LAST_FIXATION_COL] == 1, FIXATION_LATENCY_COL].values[0]
+        return self.em_trial.loc[self.em_trial[config.LAST_FIXATION_COL] == 1, config.FIXATION_LATENCY_COL].values[0]
 
     def is_eeg_epoch_truncated(self):
         return self.get_last_fixation_time() > self.get_em_epoch_end_time()
 
     def get_fixations_time(self, from_zero=False):
-        fixations_latency = np.array(self.em_trial[FIXATION_LATENCY_COL])
+        fixations_latency = np.array(self.em_trial[config.FIXATION_LATENCY_COL])
         if from_zero:
             return fixations_latency - fixations_latency[0]
         return fixations_latency
 
     def get_fixed_words(self):
-        return np.array(self.em_trial[FIXED_WORD_COL])
+        return np.array(self.em_trial[config.FIXED_WORD_COL])
 
     def plot_activity(self, channel_name):
         channel_id = self.get_channel_id(channel_name)
@@ -82,17 +112,17 @@ class SynchronizedEEGTrial:
 
     def compute_epoch_phases(self, from_zero=False, tmax = None):
         phases = []
-        start = self.em_trial.loc[self.em_trial.index[0], FIXATION_LATENCY_COL]
-        phase = self.em_trial.loc[self.em_trial.index[0], HUE_COL]
+        start = self.em_trial.loc[self.em_trial.index[0], config.FIXATION_LATENCY_COL]
+        phase = self.em_trial.loc[self.em_trial.index[0], config.HUE_COL]
         old_phase = phase
         for i in self.em_trial.index[1:-1]:
-            phase = self.em_trial.loc[i, HUE_COL]
+            phase = self.em_trial.loc[i, config.HUE_COL]
             if phase != old_phase:
-                end = self.em_trial.loc[i, FIXATION_LATENCY_COL]
+                end = self.em_trial.loc[i, config.FIXATION_LATENCY_COL]
                 phases.append((start, end, old_phase))
                 start = end
                 old_phase = phase
-        end = self.em_trial.loc[self.em_trial.index[-1], FIXATION_LATENCY_COL]
+        end = self.em_trial.loc[self.em_trial.index[-1], config.FIXATION_LATENCY_COL]
         phases.append((start, end, phase))
         if tmax is not None:
             phases_tmp = []
@@ -104,7 +134,7 @@ class SynchronizedEEGTrial:
                     break
             phases = phases_tmp
         if from_zero:
-            em_start = self.em_trial.loc[self.em_trial.index[0], FIXATION_LATENCY_COL]
+            em_start = self.em_trial.loc[self.em_trial.index[0], config.FIXATION_LATENCY_COL]
             phases = [(phase[0] - em_start, (phase[1] - em_start), phase[2])
                       for phase in phases]
         return phases
@@ -156,7 +186,7 @@ class SynchronizedEEGTrial:
             ts = self.eeg_trial[channel_id , :]
             if standardize_trial in [2, 3]:
                 wt = MODWT(ts, tmin=self.get_time_index(-100), tmax=tmax,
-                           margin=margin, nlevels=7, wf='la8')
+                           margin=margin, nlevels=nlevels, wf='la8')
                 wt_baseline = wt.wt[:, 0:100]
                 wt_wt = wt.wt[:, tmin - (-self.eeg_times[0] - 100):]
                 if standardize_trial == 2:
@@ -177,10 +207,10 @@ class SynchronizedEEGTrial:
                 wt.plot_time_series_and_wavelet_transform_with_phases(phases, scales='last_three',
                                                                       events=fixations_time, tags=tags)
                 """
-                melted_modwt_df.append(self._wt_to_melted_df(wt, phases_for_df, channel_name))
+                melted_modwt_df.append(self._wt_to_melted_df(wt, phases_for_df, channel_name, nlevels))
         return MeltedMODWTDataFrame(pd.concat(melted_modwt_df), channel_info = self.channel_info)
 
-    def _wt_to_melted_df(self, wt, phases, channel_name):
+    def _wt_to_melted_df(self, wt, phases, channel_name, nlevels):
         df = pd.DataFrame(wt.wt)
         df = df.reset_index().melt(id_vars=['index'])
         df = df.rename(index=str, columns={'index': 'SCALE',
@@ -189,7 +219,7 @@ class SynchronizedEEGTrial:
         df['TIME'] = df['TIME'].astype('uint16')
         df['VALUE'] = df['VALUE'].astype('float16')
         df['SCALE'] = df['SCALE'].astype('category')
-        df['SCALE'] = df['SCALE'].cat.set_categories(range(7))
+        df['SCALE'] = df['SCALE'].cat.set_categories(range(nlevels))
         df['CHANNEL'] = channel_name
         df['CHANNEL'] = df['CHANNEL'].astype('category')
         df['CHANNEL'] = df['CHANNEL'].cat.set_categories(self.eeg_channel_names)
@@ -197,7 +227,7 @@ class SynchronizedEEGTrial:
         df['TEXT'] = df['TEXT'].astype('category')
         df['SUBJECT'] = self.subject_name
         df['SUBJECT'] = df['SUBJECT'].astype('category')
-        df[HUE_COL] = phases
-        df[HUE_COL] = df[HUE_COL].astype('category')
-        df[HUE_COL] = df[HUE_COL].cat.set_categories(range(4))
+        df[config.HUE_COL] = phases
+        df[config.HUE_COL] = df[config.HUE_COL].astype('category')
+        df[config.HUE_COL] = df[config.HUE_COL].cat.set_categories(range(4))
         return df
