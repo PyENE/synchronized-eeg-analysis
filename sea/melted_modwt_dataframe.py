@@ -11,6 +11,10 @@ from sea.config import OUTPUT_PATH
 import uuid
 
 
+PHASE_NAMES = ['Fast Forward', 'Normal Reading', 'Information Search', 'Slow Confirmation']
+PHASE_NAMES_SHORT = ['FF', 'NR', 'IS', 'SC']
+
+
 class MeltedMODWTDataFrame(pd.DataFrame):
     """
     TODO:
@@ -48,7 +52,8 @@ class MeltedMODWTDataFrame(pd.DataFrame):
         df = df[df['SCALE'].isin(range(nb_scales - last_x_scales, nb_scales))]
         values = df.VALUE
         if normalize_power_spectrum:
-            values /= (df.SCALE.astype(float) + 1)
+            #values /= (df.SCALE.astype(float) + 1)
+            values /= 2**(df.SCALE.astype(float))
         if robust:
             vmin = values.quantile(q=0.10)
             vmax = values.quantile(q=0.90)
@@ -62,7 +67,7 @@ class MeltedMODWTDataFrame(pd.DataFrame):
                 v = df[df['PHASE'] == i].pivot(index='SCALE', columns='CHANNEL', values='VALUE')
                 sns.heatmap(v, ax=ax, vmin=vmin, vmax=vmax, cbar=i == 0, cbar_ax=None if i else cbar_ax,
                             yticklabels=scale_names[-last_x_scales:])
-                ax.set_title("p%d" % i)
+                ax.set_title(PHASE_NAMES[i])
                 ax.set_xlabel('')
                 ax.set_ylabel('')
         # fig.tight_layout()  # seaborn.heatmap ax is tight_layout() incompatible
@@ -84,7 +89,7 @@ class MeltedMODWTDataFrame(pd.DataFrame):
                     corr_mat = np.corrcoef([sub_gb.loc[j, 'VALUE'] for j in sub_gb.index])
                     sns.heatmap(corr_mat, ax=ax, xticklabels=channel_names, yticklabels=channel_names,
                                 vmin=0, vmax=1, cbar=i == 0, cbar_ax=None if i else cbar_ax)
-                ax.set_title("p%d" % i)
+                ax.set_title(PHASE_NAMES[i])
                 ax.set_xlabel('')
                 ax.set_ylabel('')
             fig.suptitle(scale_names[scale])
@@ -103,12 +108,13 @@ class MeltedMODWTDataFrame(pd.DataFrame):
         nb_subjects = len(subject_names) if 'SUBJECT' in groupby else 1
         text_types = self['TEXT_TYPE'].unique()
         nb_text_types = len(text_types) if 'TEXT_TYPE' in groupby else 1
-
+        self['SCALE'] = self['SCALE'].astype(float)
         gb = self[self['SCALE'].isin(range(nb_scales - last_x_scales, nb_scales))].groupby(
             groupby).var().reset_index()
         values = gb.VALUE
         if normalize_power_spectrum:
-            values /= (gb.SCALE.astype(float) + 1)
+            #values /= (gb.SCALE.astype(float) + 1)
+            values /= 2**(gb.SCALE.astype(float))
         if robust:
             vmin = values.quantile(q=0.10)
             vmax = values.quantile(q=0.90)
@@ -137,13 +143,14 @@ class MeltedMODWTDataFrame(pd.DataFrame):
                                                   (self['SUBJECT'].isin(subject_name))
                                              ].groupby(['CHANNEL']).var().VALUE)
                         if normalize_power_spectrum:
-                            gb_values = gb_values / (scale_id + 1)
+                            #gb_values = gb_values / (scale_id + 1)
+                            gb_values = gb_values / (2**scale_id)
                         mne.viz.plot_topomap(gb_values, self.channel_info, axes=ax,
                                              vmin=vmin, vmax=vmax, show=False)
                         if phase_id == self['PHASE'].astype(int).max():
                             ax.set_xlabel(scale_names[scale_id])
                         if scale_id == nb_scales - 1 % (last_x_scales):
-                            ax.set_ylabel('p%d' % phase_id)
+                            ax.set_ylabel(PHASE_NAMES_SHORT[phase_id])
                 plot_title = ''
                 if nb_text_types == 1:
                     plot_title += 'all text types'
@@ -153,9 +160,9 @@ class MeltedMODWTDataFrame(pd.DataFrame):
                     plot_title += ', all subjects'
                 else:
                     plot_title += ', subject %s' % subject_name
-                fig.text(0.5, 0.98, plot_title, ha='center')
-                fig.text(0.5, 0.01, 'scale', ha='center')
-                fig.text(0.01, 0.5, 'phase', va='center', rotation='vertical')
+                #fig.text(0.5, 0.98, plot_title, ha='center')
+                #fig.text(0.5, 0.01, 'scale', ha='center')
+                #fig.text(0.01, 0.5, 'phase', va='center', rotation='vertical')
                 fig.tight_layout(rect=[0, 0, .9, 1])
                 if is_file_output:
                     file_path = uuid.uuid4().hex + '.png'
