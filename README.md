@@ -1,5 +1,7 @@
 # synchronized-eeg-analysis (sea): EM-synchronized EEG analysis wrapping MODWT R package waveslim 
 
+## :warning: the package is now obsolete and has been ported to R
+
 ## Installation
 
 ```bash
